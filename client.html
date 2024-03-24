@@ -14,6 +14,33 @@
                 height: 50%;
                 border: 1px solid black;
             }
+            .lullaby-button {
+                display: inline-block;
+                margin: 10px;
+                padding: 10px 20px;
+                background-color: #008cba;
+                color: white;
+                border: none;
+                border-radius: 5px; /* Rounded corners */
+                cursor: pointer;
+                font-size: 16px; /* Larger font size */
+            }
+            .lullaby-button:hover {
+                background-color: #005f73;
+            }
+
+            /* Data text styling */
+            #sensor-data {
+                margin-top: 20px;
+                color: #fff; /* White color for the text */
+                background-color: #444; /* Darker background for visibility */
+                padding: 10px;
+                border-radius: 5px; /* Rounded corners */
+                font-size: 20px; /* Larger font size */
+                width: fit-content; /* Only as wide as necessary */
+                margin-left: auto;
+                margin-right: auto; /* Centering */
+            }
         </style>
 
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
@@ -55,6 +82,33 @@
 
                 signaling_socket.on("connect", function () {
                     console.log("Connected to signaling server");
+                    var lullabies = [1, 2, 3, 4]; // Lullaby numbers
+                    lullabies.forEach(function (number) {
+                        var button = document.createElement("button");
+                        button.className = "lullaby-button"; // Assign class for CSS styling
+
+                        button.innerText = "Play Lullaby " + number;
+                        button.onclick = function () {
+                            signaling_socket.emit("play_lullaby", {
+                                lullabyNumber: number,
+                            });
+                            console.log("Lullaby " + number + " requested");
+                        };
+                        document.body.appendChild(button);
+                    });
+                    signaling_socket.on("sensor_data", function (data) {
+                        console.log("Received sensor data:", data.data);
+                        // Display sensor data
+                        var sensorDataElement =
+                            document.getElementById("sensor-data");
+                        if (!sensorDataElement) {
+                            sensorDataElement = document.createElement("div");
+                            sensorDataElement.id = "sensor-data";
+                            document.body.appendChild(sensorDataElement);
+                        }
+                        sensorDataElement.innerText =
+                            "Sensor Data: " + data.data;
+                    });
                     localStorage.setItem(
                         "connected",
                         JSON.stringify(signaling_socket.connected)
@@ -107,8 +161,16 @@
                         return;
                     }
                     var peer_connection = new RTCPeerConnection(
-                        { iceServers: ICE_SERVERS },
-                        { optional: [{ DtlsSrtpKeyAgreement: true }] }
+                        {
+                            iceServers: ICE_SERVERS,
+                        },
+                        {
+                            optional: [
+                                {
+                                    DtlsSrtpKeyAgreement: true,
+                                },
+                            ],
+                        }
                         /* this will no longer be needed by chrome
                          * eventually (supposedly), but is necessary
                          * for now to get firefox to talk to chrome */
@@ -320,7 +382,10 @@
                 };
 
                 navigator.mediaDevices
-                    .getUserMedia({ audio: USE_AUDIO, video: USE_VIDEO })
+                    .getUserMedia({
+                        audio: USE_AUDIO,
+                        video: USE_VIDEO,
+                    })
                     .then(function (stream) {
                         /* user accepted access to a/v */ console.log(
                             "Access granted to audio/video"
