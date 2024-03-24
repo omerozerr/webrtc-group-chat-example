@@ -30,7 +30,9 @@
             }
 
             /* Data text styling */
-            #sensor-data {
+            #temperature-data,
+            #heart-rate-data,
+            #moving-data {
                 margin-top: 20px;
                 color: #fff; /* White color for the text */
                 background-color: #444; /* Darker background for visibility */
@@ -41,6 +43,7 @@
                 margin-left: auto;
                 margin-right: auto; /* Centering */
             }
+
             .alert {
                 display: none; /* Hidden by default */
                 padding: 20px;
@@ -105,37 +108,88 @@
                         document.body.appendChild(button);
                     });
                     signaling_socket.on("sensor_data", function (data) {
-                        console.log("Received sensor data:", data.data);
-                        // Display sensor data
-                        var sensorDataElement =
-                            document.getElementById("sensor-data");
-                        if (!sensorDataElement) {
-                            sensorDataElement = document.createElement("div");
-                            sensorDataElement.id = "sensor-data";
-                            document.body.appendChild(sensorDataElement);
+                        console.log("Received sensor data:", data);
+
+                        // Update UI with Temperature data
+                        var temperatureDataElement =
+                            document.getElementById("temperature-data");
+                        if (!temperatureDataElement) {
+                            temperatureDataElement =
+                                document.createElement("div");
+                            temperatureDataElement.id = "temperature-data";
+                            document.body.appendChild(temperatureDataElement);
                         }
-                        sensorDataElement.innerText =
-                            "Sensor Data: " + data.data;
-                        // Check if the sensor data is greater than 50
-                        var alertElement =
-                            document.getElementById("data-alert");
-                        if (data.data > 50) {
-                            if (!alertElement) {
-                                alertElement = document.createElement("div");
-                                alertElement.id = "data-alert";
-                                alertElement.className = "alert";
+                        temperatureDataElement.innerText =
+                            "Temperature: " + data.temperature + "°C";
+
+                        // Update UI with Move data
+                        var MovingDataElement =
+                            document.getElementById("moving-data");
+                        if (!MovingDataElement) {
+                            MovingDataElement = document.createElement("div");
+                            MovingDataElement.id = "moving-data";
+                            document.body.appendChild(MovingDataElement);
+                        }
+                        MovingDataElement.innerText =
+                            "Baby moves? " + data.move;
+
+                        // Update UI with Heart Rate data
+                        var heartRateDataElement =
+                            document.getElementById("heart-rate-data");
+                        if (!heartRateDataElement) {
+                            heartRateDataElement =
+                                document.createElement("div");
+                            heartRateDataElement.id = "heart-rate-data";
+                            document.body.appendChild(heartRateDataElement);
+                        }
+                        heartRateDataElement.innerText =
+                            "Heart Rate: " + data.heartRate + " bpm";
+
+                        // Temperature Alert
+                        var temperatureAlertElement =
+                            document.getElementById("temperature-alert");
+                        if (data.temperature > 40) {
+                            if (!temperatureAlertElement) {
+                                temperatureAlertElement =
+                                    document.createElement("div");
+                                temperatureAlertElement.id =
+                                    "temperature-alert";
+                                temperatureAlertElement.className = "alert";
                                 document.body.insertBefore(
-                                    alertElement,
-                                    sensorDataElement.nextSibling
-                                ); // Insert after the sensor data element
+                                    temperatureAlertElement,
+                                    temperatureDataElement.nextSibling
+                                );
                             }
-                            alertElement.innerText =
-                                "Warning: High sensor data value (" +
-                                data.data +
-                                ")";
-                            alertElement.style.display = "block"; // Show the alert
-                        } else if (alertElement) {
-                            alertElement.style.display = "none"; // Hide the alert if data is not high
+                            temperatureAlertElement.innerText =
+                                "Warning: High Temperature (" +
+                                data.temperature +
+                                "°C)";
+                            temperatureAlertElement.style.display = "block"; // Show the alert
+                        } else if (temperatureAlertElement) {
+                            temperatureAlertElement.style.display = "none"; // Hide the alert if data is not high
+                        }
+
+                        // Heart Rate Alert
+                        var heartRateAlertElement =
+                            document.getElementById("heart-rate-alert");
+                        if (data.heartRate > 100) {
+                            if (!heartRateAlertElement) {
+                                heartRateAlertElement =
+                                    document.createElement("div");
+                                heartRateAlertElement.id = "heart-rate-alert";
+                                heartRateAlertElement.className = "alert";
+                                document.body.insertBefore(
+                                    heartRateAlertElement,
+                                    heartRateDataElement.nextSibling
+                                );
+                            }
+                            heartRateAlertElement.innerText =
+                                "Warning: High Heart Rate (" +
+                                data.heartRate +
+                                " bpm)";
+                            heartRateAlertElement.style.display = "block"; // Show the alert
+                        } else if (heartRateAlertElement) {
+                            heartRateAlertElement.style.display = "none"; // Hide the alert if data is not high
                         }
                     });
 

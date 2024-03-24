@@ -68,9 +68,20 @@ io.sockets.on("connection", function (socket) {
 
     // Emit sensor data every 5 seconds as an example
     setInterval(() => {
-        const randomData = Math.floor(Math.random() * 100) + 1;
-        socket.emit("sensor_data", { data: randomData });
-    }, 2500);
+        // Generate random temperature between 35 and 43
+        const temperature = Math.floor(Math.random() * (43 - 35 + 1)) + 35;
+
+        // Generate random heart rate between 40 and 180
+        const heartRate = Math.floor(Math.random() * (180 - 40 + 1)) + 40;
+        const move = Math.floor(Math.random() * 2);
+
+        // Emitting both temperature and heart rate data together
+        socket.emit("sensor_data", {
+            temperature: temperature,
+            heartRate: heartRate,
+            move: move,
+        });
+    }, 1000);
 
     socket.on("play_lullaby", function (message) {
         const lullabyNumber = message.lullabyNumber;
