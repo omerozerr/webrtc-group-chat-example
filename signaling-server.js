@@ -74,13 +74,14 @@ io.sockets.on("connection", function (socket) {
         try {
             // Assuming the line is a JSON string that looks like this: {"temperature":36,"heartRate":75,"move":1}
             // You might need to adjust the parsing logic based on your sensor data format
-            const data = JSON.parse(line);
+            //const data = JSON.parse(line);
 
             // Emitting the parsed data
             socket.emit("sensor_data", {
-                temperature: Math.floor(data.temperature),
-                heartRate: data.heartRate,
-                move: data.move,
+                temperature: Math.floor(line),
+                //temperature: Math.floor(data.temperature),
+                //heartRate: data.heartRate,
+                //move: data.move,
             });
         } catch (error) {
             console.error("Error parsing data:", error);
