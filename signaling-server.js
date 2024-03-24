@@ -66,22 +66,46 @@ io.sockets.on("connection", function (socket) {
         delete sockets[socket.id];
     });
 
+    const port = new SerialPort("COM13", { baudRate: 9600 });
+    const parser = port.pipe(new Readline({ delimiter: "\n" }));
+
+    parser.on("data", (line) => {
+        console.log(`Received: ${line}`);
+        try {
+            // Assuming the line is a JSON string that looks like this: {"temperature":36,"heartRate":75,"move":1}
+            // You might need to adjust the parsing logic based on your sensor data format
+            const data = JSON.parse(line);
+
+            // Emitting the parsed data
+            socket.emit("sensor_data", {
+                temperature: Math.floor(data.temperature),
+                heartRate: data.heartRate,
+                move: data.move,
+            });
+        } catch (error) {
+            console.error("Error parsing data:", error);
+        }
+    });
+
+    port.on("error", (err) => {
+        console.log("Error:", err.message);
+    });
     // Emit sensor data every 5 seconds as an example
-    setInterval(() => {
-        // Generate random temperature between 35 and 43
+    /* setInterval(() => {
+        //Generate random temperature between 35 and 43
         const temperature = Math.floor(Math.random() * (43 - 35 + 1)) + 35;
 
-        // Generate random heart rate between 40 and 180
+        //Generate random heart rate between 40 and 180
         const heartRate = Math.floor(Math.random() * (180 - 40 + 1)) + 40;
         const move = Math.floor(Math.random() * 2);
 
-        // Emitting both temperature and heart rate data together
+        //Emitting both temperature and heart rate data together
         socket.emit("sensor_data", {
             temperature: temperature,
             heartRate: heartRate,
             move: move,
         });
-    }, 1000);
+    }, 1000); */
 
     socket.on("play_lullaby", function (message) {
         const lullabyNumber = message.lullabyNumber;
