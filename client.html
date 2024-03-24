@@ -41,6 +41,14 @@
                 margin-left: auto;
                 margin-right: auto; /* Centering */
             }
+            .alert {
+                display: none; /* Hidden by default */
+                padding: 20px;
+                background-color: #f44336; /* Red */
+                color: white;
+                margin-bottom: 15px;
+                text-align: center;
+            }
         </style>
 
         <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
@@ -108,7 +116,29 @@
                         }
                         sensorDataElement.innerText =
                             "Sensor Data: " + data.data;
+                        // Check if the sensor data is greater than 50
+                        var alertElement =
+                            document.getElementById("data-alert");
+                        if (data.data > 50) {
+                            if (!alertElement) {
+                                alertElement = document.createElement("div");
+                                alertElement.id = "data-alert";
+                                alertElement.className = "alert";
+                                document.body.insertBefore(
+                                    alertElement,
+                                    sensorDataElement.nextSibling
+                                ); // Insert after the sensor data element
+                            }
+                            alertElement.innerText =
+                                "Warning: High sensor data value (" +
+                                data.data +
+                                ")";
+                            alertElement.style.display = "block"; // Show the alert
+                        } else if (alertElement) {
+                            alertElement.style.display = "none"; // Hide the alert if data is not high
+                        }
                     });
+
                     localStorage.setItem(
                         "connected",
                         JSON.stringify(signaling_socket.connected)
