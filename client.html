@@ -107,6 +107,15 @@
                         };
                         document.body.appendChild(button);
                     });
+
+                    signaling_socket.on("voice_detection_data", function (data) {
+                        console.log("Received sensor data:", data);
+                    });
+
+                    signaling_socket.on("bluetooth_out", function (data) {
+                        console.log("Received bluetooth_out:", data);
+                    });
+
                     signaling_socket.on("sensor_data", function (data) {
                         console.log("Received sensor data:", data);
 

@@ -10,10 +10,53 @@ const fs = require("fs");
 const express = require("express");
 //var http = require('http');
 const https = require("https");
+const http = require('http');
+
 const bodyParser = require("body-parser");
 const main = express();
 const SerialPort = require("serialport");
 const Readline = require("@serialport/parser-readline");
+const ChildProcess = require("child_process");
+
+const pythonPath = '/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/my-venv/bin/python3'; // Adjust this path to where your venv is
+
+
+const pyProcess = ChildProcess.spawn(pythonPath, ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/prediction.py"]);
+const pyProcess_bluetooth = ChildProcess.spawn("python", ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py"]);
+
+let voice_detection_out = "";
+let bluetooth_out = "";
+
+
+pyProcess.stderr.on("data", data => {
+    console.error("STDERR:", data.toString());
+});
+
+pyProcess.on('error', (error) => {
+    console.error("Failed to start subprocess.", error);
+});
+
+pyProcess.on('close', (code) => {
+    console.log(`Child process exited with code ${code}`);
+});
+
+pyProcess_bluetooth.stdout.on("data", data => {
+    console.log("STDOUT:", data.toString());
+    bluetooth_out = data.toString();
+});
+
+pyProcess_bluetooth.on('error', (error) => {
+    console.error("Failed to start subprocess.", error);
+});
+
+pyProcess_bluetooth.on('close', (code) => {
+    console.log(`Child process exited with code ${code}`);
+});
+
+pyProcess_bluetooth.stderr.on("data", data => {
+    console.error("STDERR:", data.toString());
+});
+
 //const server = http.createServer(main)
 
 let privateKey, certificate;
@@ -22,6 +65,8 @@ privateKey = fs.readFileSync("ssl/server-key.pem", "utf8");
 certificate = fs.readFileSync("ssl/server-cert.pem", "utf8");
 const credentials = { key: privateKey, cert: certificate };
 const server = https.createServer(credentials, main);
+// const server = http.createServer(main);
+
 
 const io = require("socket.io").listen(server);
 //io.set('log level', 2);
@@ -58,6 +103,7 @@ io.sockets.on("connection", function (socket) {
     sockets[socket.id] = socket;
 
     console.log("[" + socket.id + "] connection accepted");
+
     socket.on("disconnect", function () {
         for (var channel in socket.channels) {
             part(channel);
@@ -66,7 +112,34 @@ io.sockets.on("connection", function (socket) {
         delete sockets[socket.id];
     });
 
-    const port = new SerialPort("COM13", { baudRate: 9600 });
+    socket.on("error", (error) => {
+        console.log(`[${socket.id}] error: ${error}`);
+    });
+
+    socket.on("python_data", function (data) {
+        console.log("Received data from Python:", data);
+        // Broadcast or emit this data to other clients
+        io.emit("update_ui", data);  // Adjust 'update_ui' to your specific needs
+    });
+
+    pyProcess.stdout.on("data", data => {
+        console.log("STDOUT:", data.toString());
+        voice_detection_out = data.toString();
+        socket.emit("voice_detection_data", {
+            data: voice_detection_out
+        });
+
+    });
+
+    setInterval(() => {
+        //Emitting both temperature and heart rate data together
+        socket.emit("bluetooth_out", {
+            data: bluetooth_out
+        });
+    }, 1000); 
+    
+
+    /* const port = new SerialPort("COM13", { baudRate: 9600 });
     const parser = port.pipe(new Readline({ delimiter: "\n" }));
 
     parser.on("data", (line) => {
@@ -86,13 +159,13 @@ io.sockets.on("connection", function (socket) {
         } catch (error) {
             console.error("Error parsing data:", error);
         }
-    });
+    }); 
 
     port.on("error", (err) => {
         console.log("Error:", err.message);
-    });
+    }); */
     // Emit sensor data every 5 seconds as an example
-    /* setInterval(() => {
+     setInterval(() => {
         //Generate random temperature between 35 and 43
         const temperature = Math.floor(Math.random() * (43 - 35 + 1)) + 35;
 
@@ -106,7 +179,7 @@ io.sockets.on("connection", function (socket) {
             heartRate: heartRate,
             move: move,
         });
-    }, 1000); */
+    }, 1000); 
 
     socket.on("play_lullaby", function (message) {
         const lullabyNumber = message.lullabyNumber;
