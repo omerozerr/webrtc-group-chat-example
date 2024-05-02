@@ -23,9 +23,11 @@ const pythonPath = '/home/wattsup/Desktop/server/webrtc-group-chat-example/voice
 
 const pyProcess = ChildProcess.spawn(pythonPath, ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/prediction.py"]);
 const pyProcess_bluetooth = ChildProcess.spawn("python", ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py"]);
+const pyProcess_movement = ChildProcess.spawn("python", ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/movement/main.py"]);
 
 let voice_detection_out = "";
 let bluetooth_out = "";
+let movement_out = "";
 
 
 pyProcess.stderr.on("data", data => {
@@ -54,6 +56,23 @@ pyProcess_bluetooth.on('close', (code) => {
 });
 
 pyProcess_bluetooth.stderr.on("data", data => {
+    console.error("STDERR:", data.toString());
+});
+
+pyProcess_movement.stdout.on("data", data => {
+    console.log("STDOUT:", data.toString());
+    movement_out = data.toString();
+});
+
+pyProcess_movement.on('error', (error) => {
+    console.error("Failed to start subprocess.", error);
+});
+
+pyProcess_movement.on('close', (code) => {
+    console.log(`Child process exited with code ${code}`);
+});
+
+pyProcess_movement.stderr.on("data", data => {
     console.error("STDERR:", data.toString());
 });
 
@@ -135,6 +154,9 @@ io.sockets.on("connection", function (socket) {
         //Emitting both temperature and heart rate data together
         socket.emit("bluetooth_out", {
             data: bluetooth_out
+        });
+        socket.emit("movement_out", {
+            data: movement_out
         });
     }, 1000); 
     

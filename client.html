@@ -116,6 +116,10 @@
                         console.log("Received bluetooth_out:", data);
                     });
 
+                    signaling_socket.on("movement_out", function (data) {
+                        console.log("Received movement_out:", data);
+                    });
+
                     signaling_socket.on("sensor_data", function (data) {
                         console.log("Received sensor data:", data);
 
@@ -513,9 +517,35 @@
     </head>
 
     <body onload="init()">
-        <!-- 
-        the <video> and <audio> tags are all added and removed dynamically
-        in 'onAddStream', 'setup_local_media', and 'removePeer'/'disconnect'
-        -->
+        <!-- Dropdown for selecting age range -->
+        <select id="ageRangeDropdown" class="lullaby-button">
+            <option value="110">0-3 months</option>
+            <option value="105">3-6 months</option>
+            <option value="100">6-9 months</option>
+            <option value="95">9-12 months</option>
+            <option value="90">12-18 months</option>
+            <option value="85">18-24 months</option>
+            <option value="80">2-3 years</option>
+        </select>
+
+        <!-- Display area for selected heart rate threshold -->
+        <div id="heart-rate-data" style="color: white;">Heart Rate Threshold: Not set</div>
+
+        <script>
+            var heartRateThreshold;
+
+            $(document).ready(function() {
+
+                // Update display when dropdown changes
+                $('#ageRangeDropdown').change(function() {
+                    heartRateThreshold = $(this).val();
+                    $('#heart-rate-data').text("Heart Rate Threshold: " + heartRateThreshold + " bpm");
+                    console.log("Selected Heart Rate Threshold: " + heartRateThreshold); // Log the selected value to the console
+
+                });
+            });
+        </script>
+        
+        <!-- Other scripts related to your application's functionality -->
     </body>
 </html>
