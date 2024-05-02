@@ -10,69 +10,80 @@ const fs = require("fs");
 const express = require("express");
 //var http = require('http');
 const https = require("https");
-const http = require('http');
+const http = require("http");
 
 const bodyParser = require("body-parser");
 const main = express();
 const SerialPort = require("serialport");
 const Readline = require("@serialport/parser-readline");
 const ChildProcess = require("child_process");
+const player = require("play-sound")();
 
-const pythonPath = '/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/my-venv/bin/python3'; // Adjust this path to where your venv is
+const pythonPath =
+    "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/my-venv/bin/python3"; // Adjust this path to where your venv is
 
+const pyProcess = ChildProcess.spawn(pythonPath, [
+    "-u",
+    "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/prediction.py",
+]);
+const pyProcess_bluetooth = ChildProcess.spawn("python", [
+    "-u",
+    "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py",
+]);
+const pyProcess_movement = ChildProcess.spawn("python", [
+    "-u",
+    "/home/wattsup/Desktop/server/webrtc-group-chat-example/movement/main.py",
+]);
 
-const pyProcess = ChildProcess.spawn(pythonPath, ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/prediction.py"]);
-const pyProcess_bluetooth = ChildProcess.spawn("python", ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py"]);
-const pyProcess_movement = ChildProcess.spawn("python", ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/movement/main.py"]);
-
-let voice_detection_out = "";
+let voice_detection_out = "0";
 let bluetooth_out = "";
 let movement_out = "";
+let cry_count = 0;
+let isPlaying = false;
 
-
-pyProcess.stderr.on("data", data => {
+pyProcess.stderr.on("data", (data) => {
     console.error("STDERR:", data.toString());
 });
 
-pyProcess.on('error', (error) => {
+pyProcess.on("error", (error) => {
     console.error("Failed to start subprocess.", error);
 });
 
-pyProcess.on('close', (code) => {
+pyProcess.on("close", (code) => {
     console.log(`Child process exited with code ${code}`);
 });
 
-pyProcess_bluetooth.stdout.on("data", data => {
+pyProcess_bluetooth.stdout.on("data", (data) => {
     console.log("STDOUT:", data.toString());
     bluetooth_out = data.toString();
 });
 
-pyProcess_bluetooth.on('error', (error) => {
+pyProcess_bluetooth.on("error", (error) => {
     console.error("Failed to start subprocess.", error);
 });
 
-pyProcess_bluetooth.on('close', (code) => {
+pyProcess_bluetooth.on("close", (code) => {
     console.log(`Child process exited with code ${code}`);
 });
 
-pyProcess_bluetooth.stderr.on("data", data => {
+pyProcess_bluetooth.stderr.on("data", (data) => {
     console.error("STDERR:", data.toString());
 });
 
-pyProcess_movement.stdout.on("data", data => {
+pyProcess_movement.stdout.on("data", (data) => {
     console.log("STDOUT:", data.toString());
     movement_out = data.toString();
 });
 
-pyProcess_movement.on('error', (error) => {
+pyProcess_movement.on("error", (error) => {
     console.error("Failed to start subprocess.", error);
 });
 
-pyProcess_movement.on('close', (code) => {
+pyProcess_movement.on("close", (code) => {
     console.log(`Child process exited with code ${code}`);
 });
 
-pyProcess_movement.stderr.on("data", data => {
+pyProcess_movement.stderr.on("data", (data) => {
     console.error("STDERR:", data.toString());
 });
 
@@ -85,7 +96,6 @@ certificate = fs.readFileSync("ssl/server-cert.pem", "utf8");
 const credentials = { key: privateKey, cert: certificate };
 const server = https.createServer(credentials, main);
 // const server = http.createServer(main);
-
 
 const io = require("socket.io").listen(server);
 //io.set('log level', 2);
@@ -106,6 +116,40 @@ main.get("/", function (req, res) {
 /*************************/
 var channels = {};
 var sockets = {};
+
+function playLullaby(random = 0, number) {
+    // Generate a random lullaby number between 1 and 5
+    if (isPlaying) {
+        console.log(
+            `Lullaby requested, but another lullaby is currently playing.`
+        );
+        return; // Skip playing a new lullaby if one is already playing
+    }
+    let lullabyNumber;
+    if (random) {
+        lullabyNumber = Math.floor(Math.random() * 2) + 1;
+    } else {
+        lullabyNumber = number;
+    }
+    console.log(`Playing Lullaby ${lullabyNumber}`);
+    // Add logic to play the lullaby here
+    // For example, you can use a library like 'play-sound' to play an audio file
+    // Install play-sound using npm: npm install play-sound
+    // Then use it to play the lullaby file based on the lullabyNumber
+    const lullabyPath = `lullabies/lullaby${lullabyNumber}.mp3`;
+    isPlaying = true; // Set the isPlaying flag to true
+
+    player.play(lullabyPath, function (err) {
+        if (err) {
+            console.error("Error playing the lullaby:", err);
+            isPlaying = false; // Reset the flag if there's an error
+            return;
+        }
+        console.log(`Lullaby ${lullabyNumber} finished playing.`);
+        isPlaying = false; // Reset the flag when the lullaby finishes playing
+        // Lullaby finished playing
+    });
+}
 
 /**
  * Users will connect to the signaling server, after which they'll issue a "join"
@@ -138,28 +182,34 @@ io.sockets.on("connection", function (socket) {
     socket.on("python_data", function (data) {
         console.log("Received data from Python:", data);
         // Broadcast or emit this data to other clients
-        io.emit("update_ui", data);  // Adjust 'update_ui' to your specific needs
+        io.emit("update_ui", data); // Adjust 'update_ui' to your specific needs
     });
 
-    pyProcess.stdout.on("data", data => {
+    pyProcess.stdout.on("data", (data) => {
         console.log("STDOUT:", data.toString());
         voice_detection_out = data.toString();
+        if (voice_detection_out === "1") {
+            cry_count += 1;
+        } else {
+            cry_count = 0;
+        }
         socket.emit("voice_detection_data", {
-            data: voice_detection_out
+            data: voice_detection_out,
         });
-
+        if (cry_count == 2) {
+            playLullaby((random = 1));
+        }
     });
 
     setInterval(() => {
         //Emitting both temperature and heart rate data together
         socket.emit("bluetooth_out", {
-            data: bluetooth_out
+            data: bluetooth_out,
         });
         socket.emit("movement_out", {
-            data: movement_out
+            data: movement_out,
         });
-    }, 1000); 
-    
+    }, 1000);
 
     /* const port = new SerialPort("COM13", { baudRate: 9600 });
     const parser = port.pipe(new Readline({ delimiter: "\n" }));
@@ -187,7 +237,7 @@ io.sockets.on("connection", function (socket) {
         console.log("Error:", err.message);
     }); */
     // Emit sensor data every 5 seconds as an example
-     setInterval(() => {
+    setInterval(() => {
         //Generate random temperature between 35 and 43
         const temperature = Math.floor(Math.random() * (43 - 35 + 1)) + 35;
 
@@ -201,12 +251,12 @@ io.sockets.on("connection", function (socket) {
             heartRate: heartRate,
             move: move,
         });
-    }, 1000); 
+    }, 1000);
 
     socket.on("play_lullaby", function (message) {
         const lullabyNumber = message.lullabyNumber;
         console.log(`Play Lullaby ${lullabyNumber}`);
-        // Additional logic here
+        playLullaby((random = 0), (number = lullabyNumber));
     });
 
     socket.on("join", function (config) {
