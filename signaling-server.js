@@ -21,7 +21,7 @@ const ChildProcess = require("child_process");
 const pythonPath = '/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/my-venv/bin/python3'; // Adjust this path to where your venv is
 
 
-const pyProcess = ChildProcess.spawn(pythonPath, ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/prediction.py"]);
+const pyProcess = ChildProcess.spawn(pythonPath, ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/new_prediction.py"]);
 const pyProcess_bluetooth = ChildProcess.spawn("python", ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py"]);
 const pyProcess_movement = ChildProcess.spawn("python", ["-u", "/home/wattsup/Desktop/server/webrtc-group-chat-example/movement/main.py"]);
 
