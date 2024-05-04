@@ -108,9 +108,12 @@
                         document.body.appendChild(button);
                     });
 
-                    signaling_socket.on("voice_detection_data", function (data) {
-                        console.log("Received sensor data:", data);
-                    });
+                    signaling_socket.on(
+                        "voice_detection_data",
+                        function (data) {
+                            console.log("Received sensor data:", data);
+                        }
+                    );
 
                     signaling_socket.on("bluetooth_out", function (data) {
                         console.log("Received bluetooth_out:", data);
@@ -529,23 +532,85 @@
         </select>
 
         <!-- Display area for selected heart rate threshold -->
-        <div id="heart-rate-data" style="color: white;">Heart Rate Threshold: Not set</div>
+        <div id="heart-rate-data" style="color: white">
+            Heart Rate Threshold: Not set
+        </div>
 
         <script>
             var heartRateThreshold;
 
-            $(document).ready(function() {
-
+            $(document).ready(function () {
                 // Update display when dropdown changes
-                $('#ageRangeDropdown').change(function() {
+                $("#ageRangeDropdown").change(function () {
                     heartRateThreshold = $(this).val();
-                    $('#heart-rate-data').text("Heart Rate Threshold: " + heartRateThreshold + " bpm");
-                    console.log("Selected Heart Rate Threshold: " + heartRateThreshold); // Log the selected value to the console
-
+                    $("#heart-rate-data").text(
+                        "Heart Rate Threshold: " + heartRateThreshold + " bpm"
+                    );
+                    console.log(
+                        "Selected Heart Rate Threshold: " + heartRateThreshold
+                    ); // Log the selected value to the console
                 });
             });
         </script>
-        
+
         <!-- Other scripts related to your application's functionality -->
+
+        <div id="baby-status" style="color: white">Baby Status: Unknown</div>
+
+        <script>
+            // JavaScript logic to determine baby's sleep/awake status
+            var voice_detection_data = "1"; // Example value, replace with actual data
+            var bluetooth_out = { heartrate: 90 }; // Example value, replace with actual data
+            var movement_out = "1"; // Example value, replace with actual data
+
+            // Function to determine if the baby is sleeping or awake
+            function determineBabyStatus(
+                voice_detection_data,
+                bluetooth_out,
+                movement_out
+            ) {
+                if (
+                    voice_detection_data !== "0" ||
+                    (bluetooth_out.heartrate > heartRateThreshold &&
+                        movement_out === "1")
+                ) {
+                    return "Awake";
+                } else {
+                    return "Sleeping";
+                }
+            }
+
+            // Update baby status display when data changes
+            function updateBabyStatusDisplay() {
+                var babyStatusElement = document.getElementById("baby-status");
+                if (!babyStatusElement) {
+                    babyStatusElement = document.createElement("div");
+                    babyStatusElement.id = "baby-status";
+                    document.body.appendChild(babyStatusElement);
+                }
+                var status = determineBabyStatus(
+                    voice_detection_data,
+                    bluetooth_out,
+                    movement_out
+                );
+                babyStatusElement.innerText = "Baby Status: " + status;
+            }
+
+            // Call update function when data changes
+            // For demonstration purposes, simulate data change every 5 seconds
+            setInterval(function () {
+                // Simulate data change
+                voice_detection_data = Math.random() < 0.5 ? "0" : "1";
+                bluetooth_out.heartrate =
+                    Math.floor(Math.random() * (120 - 70 + 1)) + 70;
+                movement_out = Math.random() < 0.5 ? "0" : "1";
+
+                // Update baby status display
+                updateBabyStatusDisplay();
+            }, 5000);
+
+            // Initial update of baby status display
+            updateBabyStatusDisplay();
+        </script>
     </body>
 </html>
