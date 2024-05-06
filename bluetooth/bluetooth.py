@@ -10,7 +10,6 @@ while True:
         if bluetooth.in_waiting > 0:
             data = bluetooth.readline().decode("utf-8").strip()
             print("Received:", data)
-        else:
-            print("a")
+
             
 

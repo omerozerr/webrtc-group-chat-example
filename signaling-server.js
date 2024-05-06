@@ -24,12 +24,12 @@ const pythonPath =
 
 const pyProcess = ChildProcess.spawn(pythonPath, [
     "-u",
-    "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/prediction.py",
+    "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/new_prediction.py",
 ]);
-const pyProcess_bluetooth = ChildProcess.spawn("python", [
-    "-u",
-    "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py",
-]);
+//const pyProcess_bluetooth = ChildProcess.spawn("python", [
+//    "-u",
+//    "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py",
+//]);
 const pyProcess_movement = ChildProcess.spawn("python", [
     "-u",
     "/home/wattsup/Desktop/server/webrtc-group-chat-example/movement/main.py",
@@ -53,22 +53,22 @@ pyProcess.on("close", (code) => {
     console.log(`Child process exited with code ${code}`);
 });
 
-pyProcess_bluetooth.stdout.on("data", (data) => {
-    console.log("STDOUT:", data.toString());
-    bluetooth_out = data.toString();
-});
+//pyProcess_bluetooth.stdout.on("data", (data) => {
+//    console.log("STDOUT:", data.toString());
+//    bluetooth_out = data.toString();
+//});
 
-pyProcess_bluetooth.on("error", (error) => {
-    console.error("Failed to start subprocess.", error);
-});
+//pyProcess_bluetooth.on("error", (error) => {
+//    console.error("Failed to start subprocess.", error);
+//});
 
-pyProcess_bluetooth.on("close", (code) => {
-    console.log(`Child process exited with code ${code}`);
-});
+//pyProcess_bluetooth.on("close", (code) => {
+//    console.log(`Child process exited with code ${code}`);
+//});
 
-pyProcess_bluetooth.stderr.on("data", (data) => {
-    console.error("STDERR:", data.toString());
-});
+//pyProcess_bluetooth.stderr.on("data", (data) => {
+//    console.error("STDERR:", data.toString());
+//});
 
 pyProcess_movement.stdout.on("data", (data) => {
     console.log("STDOUT:", data.toString());

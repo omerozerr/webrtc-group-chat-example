@@ -10,7 +10,7 @@ import speech_recognition as sr
 from nlgnpreprocess import *
 
 ####### ALL CONSTANTS #####
-fs = 16000
+fs = 44100
 seconds = 2
 filename = "prediction.wav"
 file_name = 'prediction.wav'
@@ -35,7 +35,7 @@ i = 0
 while True:
 #for file_name in file_names:
     print("Say Now: ")
-    myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1,dtype='int16')
+    myrecording = sd.rec(int(seconds * fs), samplerate= fs, channels=1,dtype='int16', device = 2)
     #myrecording = file_name
     sd.wait()
     write(filename, fs, myrecording)
@@ -54,7 +54,7 @@ while True:
     mfcc_reshaped = np.expand_dims(np.expand_dims(mfcc_padded, axis=0), axis=-1)
 
     # Predict the class of the captured audio
-    prediction = model.predict(mfcc_reshaped)
+    prediction = model.predict(mfcc_reshaped, verbose = 0)
     predicted_class = np.argmax(prediction, axis=1)[0]
     confidence = np.max(prediction, axis=1)[0]
     
