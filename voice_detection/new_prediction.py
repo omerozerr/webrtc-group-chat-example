@@ -8,6 +8,12 @@ import os
 import soundfile as sf
 import speech_recognition as sr
 from nlgnpreprocess import *
+import time
+
+
+print(sd.query_devices())
+
+sd.default.device = 'hw:4,0'
 
 ####### ALL CONSTANTS #####
 fs = 44100
@@ -35,10 +41,18 @@ i = 0
 while True:
 #for file_name in file_names:
     print("Say Now: ")
-    myrecording = sd.rec(int(seconds * fs), samplerate= fs, channels=1,dtype='int16', device = 2)
+    while True:
+        try:
+            myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
+            sd.wait()
+            write(filename, fs, myrecording)
+            break  # If the try block is successful, break out of the loop
+        except Exception as e:
+            print(f"An error occurred: {e}. Retrying in 1 second...")
+            time.sleep(1)  # Wait for 1 second before retrying
+
     #myrecording = file_name
-    sd.wait()
-    write(filename, fs, myrecording)
+
     """
     filename = os.path.join(path, file_name)
     print(f"Processing file: {file_name}")
@@ -46,7 +60,6 @@ while True:
     audio, sample_rate = librosa.load(filename)
 
     mfcc = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)  # Take the first channel if stereo
-    print(mfcc.shape)
 
     # Reshape to match the model's expected input
     mfcc_padded = np.zeros((192, 40))  # Use the model's expected dimensions
@@ -66,9 +79,8 @@ while True:
     #mfcc_nlgn_withcry = np.expand_dims(mfcc_nlgn_withcry, axis=0)  # Add batch size dimension
     #mfcc_nlgn_withcry = np.expand_dims(mfcc_nlgn_withcry, axis=-1)  # Add channel dimension
 
-    print(mfcc_nlgn.shape)
     #prediction_nlgn_withcry = model_nlgn_withcry.predict(mfcc_nlgn_withcry)
-    prediction_nlgn_withoutcry = model_nlgn_withoutcry.predict(mfcc_nlgn)
+    prediction_nlgn_withoutcry = model_nlgn_withoutcry.predict(mfcc_nlgn, verbose = 0)
     #predicted_class_nlgn_withcry = np.argmax(prediction_nlgn_withcry, axis=1)[0]
     predicted_class_nlgn_withoutcry = np.argmax(prediction_nlgn_withoutcry, axis=1)[0]
     #confidence_nlgn_withcry = np.max(prediction_nlgn_withcry, axis=1)[0]

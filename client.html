@@ -467,12 +467,15 @@
                 /* Ask user for permission to use the computers microphone and/or camera,
                  * attach it to an <audio> or <video> tag if they give us access. */
                 console.log("Requesting access to local audio / video inputs");
+                var isRaspberryPi = navigator.userAgent.includes("x86_64");  // Adjust detection method as needed
+                console.log("raspb?", isRaspberryPi)
 
                 navigator.getUserMedia =
                     navigator.getUserMedia ||
                     navigator.webkitGetUserMedia ||
                     navigator.mozGetUserMedia ||
                     navigator.msGetUserMedia;
+                
 
                 attachMediaStream = function (element, stream) {
                     console.log(
@@ -483,25 +486,28 @@
 
                 navigator.mediaDevices
                     .getUserMedia({
-                        audio: USE_AUDIO,
+                        audio: true,
                         video: USE_VIDEO,
                     })
                     .then(function (stream) {
                         /* user accepted access to a/v */ console.log(
                             "Access granted to audio/video"
                         );
+                
                         local_media_stream = stream;
                         var local_media = USE_VIDEO
                             ? $("<video/>")
                             : $("<audio/>");
                         local_media.attr("autoplay", "autoplay");
-                        local_media.attr(
-                            "muted",
-                            "true"
-                        ); /* always mute ourselves by default */
+                        console.log(local_media);
+                        local_media[0].muted = true; /* always mute ourselves by default */
                         local_media.attr("controls", "");
+                        console.log(local_media);
+
                         $("body").append(local_media);
                         console.warn("la ibo lkocal meddai", local_media);
+                        console.log("local media 0", local_media[0]);
+                        console.log("stream", stream);
                         attachMediaStream(local_media[0], stream);
 
                         if (callback) callback();
@@ -522,8 +528,8 @@
     <body onload="init()">
         <!-- Dropdown for selecting age range -->
         <select id="ageRangeDropdown" class="lullaby-button">
-            <option value="110">0-3 months</option>
-            <option value="105">3-6 months</option>
+            <option value="135">0-3 months</option>
+            <option value="120">3-6 months</option>
             <option value="100">6-9 months</option>
             <option value="95">9-12 months</option>
             <option value="90">12-18 months</option>

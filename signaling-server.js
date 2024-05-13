@@ -17,8 +17,6 @@ const main = express();
 const SerialPort = require("serialport");
 const Readline = require("@serialport/parser-readline");
 const ChildProcess = require("child_process");
-const player = require("play-sound")();
-
 const pythonPath =
     "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/my-venv/bin/python3"; // Adjust this path to where your venv is
 
@@ -118,36 +116,35 @@ var channels = {};
 var sockets = {};
 
 function playLullaby(random = 0, number) {
-    // Generate a random lullaby number between 1 and 5
+    const Sound = require('node-aplay');
     if (isPlaying) {
-        console.log(
-            `Lullaby requested, but another lullaby is currently playing.`
-        );
-        return; // Skip playing a new lullaby if one is already playing
+        console.log('Lullaby requested, but another lullaby is currently playing.');
+        return;
     }
+
     let lullabyNumber;
     if (random) {
-        lullabyNumber = Math.floor(Math.random() * 2) + 1;
+        lullabyNumber = Math.floor(Math.random() * 5) + 1;  // Fixed the range to 1 to 5 as you described earlier
     } else {
         lullabyNumber = number;
     }
+    const lullabyPath = `/home/wattsup/Desktop/server/webrtc-group-chat-example/lullabies/lullaby${lullabyNumber}.wav`;  // Ensure this path is correct and points to a .wav file
     console.log(`Playing Lullaby ${lullabyNumber}`);
-    // Add logic to play the lullaby here
-    // For example, you can use a library like 'play-sound' to play an audio file
-    // Install play-sound using npm: npm install play-sound
-    // Then use it to play the lullaby file based on the lullabyNumber
-    const lullabyPath = `lullabies/lullaby${lullabyNumber}.mp3`;
-    isPlaying = true; // Set the isPlaying flag to true
+    console.log(lullabyPath);
 
-    player.play(lullabyPath, function (err) {
-        if (err) {
-            console.error("Error playing the lullaby:", err);
-            isPlaying = false; // Reset the flag if there's an error
-            return;
-        }
+    isPlaying = true;
+
+    let music = new Sound(lullabyPath);
+    music.play();
+
+    music.on('complete', function () {
         console.log(`Lullaby ${lullabyNumber} finished playing.`);
-        isPlaying = false; // Reset the flag when the lullaby finishes playing
-        // Lullaby finished playing
+        isPlaying = false;
+    });
+
+    music.on('error', function (error) {
+        console.error('Error playing the lullaby:', error);
+        isPlaying = false;
     });
 }
 
@@ -209,7 +206,7 @@ io.sockets.on("connection", function (socket) {
         socket.emit("movement_out", {
             data: movement_out,
         });
-    }, 1000);
+    }, 2000);
 
     /* const port = new SerialPort("COM13", { baudRate: 9600 });
     const parser = port.pipe(new Readline({ delimiter: "\n" }));
@@ -237,7 +234,7 @@ io.sockets.on("connection", function (socket) {
         console.log("Error:", err.message);
     }); */
     // Emit sensor data every 5 seconds as an example
-    setInterval(() => {
+    /*setInterval(() => {
         //Generate random temperature between 35 and 43
         const temperature = Math.floor(Math.random() * (43 - 35 + 1)) + 35;
 
@@ -251,7 +248,7 @@ io.sockets.on("connection", function (socket) {
             heartRate: heartRate,
             move: move,
         });
-    }, 1000);
+    }, 2000);*/
 
     socket.on("play_lullaby", function (message) {
         const lullabyNumber = message.lullabyNumber;
