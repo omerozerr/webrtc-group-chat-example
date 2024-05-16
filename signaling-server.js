@@ -22,15 +22,17 @@ const Sound = require('node-aplay');
 
 const pythonPath =
     "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/my-venv/bin/python3"; // Adjust this path to where your venv is
+let spawn = 0;
+
 
 const pyProcess = ChildProcess.spawn(pythonPath, [
     "-u",
     "/home/wattsup/Desktop/server/webrtc-group-chat-example/voice_detection/new_prediction.py",
 ]);
-//const pyProcess_bluetooth = ChildProcess.spawn("python", [
-//    "-u",
-//    "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth.py",
-//]);
+const pyProcess_bluetooth = ChildProcess.spawn("python", [
+    "-u",
+    "/home/wattsup/Desktop/server/webrtc-group-chat-example/bluetooth/bluetooth_script.py",
+]);
 const pyProcess_movement = ChildProcess.spawn("python", [
     "-u",
     "/home/wattsup/Desktop/server/webrtc-group-chat-example/movement/main.py",
@@ -41,10 +43,8 @@ let bluetooth_out = "";
 let movement_out = "";
 let cry_count = 0;
 let isPlaying = false;
-
-pyProcess.stderr.on("data", (data) => {
-    console.error("STDERR:", data.toString());
-});
+let temperature = 0;
+let avg_bpm = 0;
 
 pyProcess.on("error", (error) => {
     console.error("Failed to start subprocess.", error);
@@ -54,25 +54,56 @@ pyProcess.on("close", (code) => {
     console.log(`Child process exited with code ${code}`);
 });
 
-//pyProcess_bluetooth.stdout.on("data", (data) => {
-//    console.log("STDOUT:", data.toString());
-//    bluetooth_out = data.toString();
-//});
+pyProcess.stdout.on("data", (data) => {
+    console.log("STDOUT_voice:", data.toString());
 
-//pyProcess_bluetooth.on("error", (error) => {
-//    console.error("Failed to start subprocess.", error);
-//});
+});
 
-//pyProcess_bluetooth.on("close", (code) => {
-//    console.log(`Child process exited with code ${code}`);
-//});
+pyProcess_bluetooth.stdout.on('data', (data) => {
+    const output = data.toString().toLowerCase().trim();
+    console.log("STDOUT_bluetooth:", output);
 
-//pyProcess_bluetooth.stderr.on("data", (data) => {
-//    console.error("STDERR:", data.toString());
-//});
+    // Split the output into lines
+    const lines = output.split('\n');
+
+    lines.forEach((line) => {
+        line = line.trim();
+        // Parse temperature and avg_bpm from the output
+        try {
+            if (line.includes('temperature:')) {
+                const tempMatch = line.match(/temperature: (\d+(\.\d+)?)/);
+                if (tempMatch) {
+                    temperature = parseFloat(tempMatch[1]);
+                }
+            } else if (line.includes('avg_bpm=')) {
+                const bpmMatch = line.match(/avg_bpm=(\d+(\.\d+)?)/);
+                if (bpmMatch) {
+                    avg_bpm = parseFloat(bpmMatch[1]);
+                }
+            }
+        } catch (error) {
+            console.log("Invalid data", line);
+        }
+    });
+
+    console.log("Temperature:", temperature);
+    console.log("Avg BPM:", avg_bpm);
+});
+
+pyProcess_bluetooth.on("error", (error) => {
+    console.error("Failed to start subprocess.", error);
+});
+
+pyProcess_bluetooth.on("close", (code) => {
+    console.log(`Child process exited with code ${code}`);
+});
+
+pyProcess_bluetooth.stderr.on("data", (data) => {
+    console.error("STDERR:", data.toString());
+});
 
 pyProcess_movement.stdout.on("data", (data) => {
-    console.log("STDOUT:", data.toString());
+    console.log("STDOUT_movement:", data.toString());
     movement_out = data.toString();
 });
 
@@ -87,7 +118,6 @@ pyProcess_movement.on("close", (code) => {
 pyProcess_movement.stderr.on("data", (data) => {
     console.error("STDERR:", data.toString());
 });
-
 //const server = http.createServer(main)
 
 let privateKey, certificate;
@@ -111,6 +141,10 @@ main.get("/", function (req, res) {
 });
 // main.get('/index.html', function(req, res){ res.sendfile('newclient.html'); });
 // main.get('/client.html', function(req, res){ res.sendfile('newclient.html'); });
+
+
+
+
 
 /*************************/
 /*** INTERESTING STUFF ***/
@@ -194,9 +228,9 @@ io.sockets.on("connection", function (socket) {
     });
 
     pyProcess.stdout.on("data", (data) => {
-        console.log("STDOUT:", data.toString());
+       
         voice_detection_out = data.toString();
-        if (voice_detection_out === "1") {
+        if (voice_detection_out === "cry\n") {
             cry_count += 1;
         } else {
             cry_count = 0;
@@ -211,10 +245,13 @@ io.sockets.on("connection", function (socket) {
 
     setInterval(() => {
         //Emitting both temperature and heart rate data together
-        socket.emit("bluetooth_out", {
-            data: bluetooth_out,
+        socket.emit("temperature", {
+            data: temperature,
         });
-        socket.emit("movement_out", {
+        socket.emit("avg_bpm", {
+            data: avg_bpm,
+        });
+        socket.emit("movement", {
             data: movement_out,
         });
     }, 2000);

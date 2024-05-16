@@ -11,7 +11,6 @@ from nlgnpreprocess import *
 import time
 
 
-print(sd.query_devices())
 
 
 ####### ALL CONSTANTS #####
@@ -29,9 +28,6 @@ class_names = ["bg", "cry", "mama", "papa"]  # Class names
 class_names_nlgn_withoutcry = ["bg", "mama", "papa"]  # Class names nlgn
 #class_names_nlgn_withcry = ["bg","cry", "mama", "papa"]  # Class names nlgn
 recognizer = sr.Recognizer()
-
-print("Prediction Started: ")
-
 #path = os.path.join("testingsounds")
 #file_names = os.listdir(path)
 
@@ -39,16 +35,17 @@ print("Prediction Started: ")
 i = 0
 while True:
 #for file_name in file_names:
-    print("Say Now: ")
     while True:
         try:
-            myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16', device="hw:3,0")
+            myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16', device="hw:4,0")
             sd.wait()
             write(filename, fs, myrecording)
             break  # If the try block is successful, break out of the loop
         except Exception as e:
             print(f"An error occurred: {e}. Retrying in 1 second...")
-            time.sleep(1)  # Wait for 1 second before retrying
+            print(sd.query_devices())
+
+            time.sleep(3)  # Wait for 1 second before retrying
 
     #myrecording = file_name
 

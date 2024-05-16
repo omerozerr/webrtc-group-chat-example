@@ -32,6 +32,7 @@
             /* Data text styling */
             #temperature-data,
             #heart-rate-data,
+            #voice-data,
             #moving-data {
                 margin-top: 20px;
                 color: #fff; /* White color for the text */
@@ -81,6 +82,10 @@
             var peer_media_elements =
                 {}; /* keep track of our <video>/<audio> tags, indexed by peer_id */
 
+            var voice_detection_data = "";
+            var movement_data = "";
+            var heartrate_data = 0;
+            var heartRateThreshold = 60;
             function init() {
                 console.log("Connecting to signaling server");
                 // if(connected){
@@ -108,105 +113,115 @@
                         document.body.appendChild(button);
                     });
 
-                    signaling_socket.on(
-                        "voice_detection_data",
-                        function (data) {
-                            console.log("Received sensor data:", data);
+                    // Voice Detection Data
+                    signaling_socket.on("voice_detection_data", function (data) {
+                        console.log("Received voice data:", data.data);
+                        voice_detection_data = data.data;
+
+                        // Update UI with Voice data
+                        var voiceDataElement = document.getElementById("voice-data");
+                        if (!voiceDataElement) {
+                            voiceDataElement = document.createElement("div");
+                            voiceDataElement.id = "voice-data";
+                            document.body.appendChild(voiceDataElement);
                         }
-                    );
 
-                    signaling_socket.on("bluetooth_out", function (data) {
-                        console.log("Received bluetooth_out:", data);
+                        if (data.data === "cry\n") {
+                            voiceDataElement.innerText = "Baby is crying";
+                        } else if (data.data === "mama\n") {
+                            voiceDataElement.innerText = "Baby said mama";
+                        } else if (data.data === "papa\n") {
+                            voiceDataElement.innerText = "Baby said papa";
+                        }
+                        updateBabyStatusDisplay();
                     });
 
-                    signaling_socket.on("movement_out", function (data) {
-                        console.log("Received movement_out:", data);
-                    });
-
-                    signaling_socket.on("sensor_data", function (data) {
-                        console.log("Received sensor data:", data);
+                    signaling_socket.on("temperature", function (data) {
+                        console.log("Received temperature:", data.data);
 
                         // Update UI with Temperature data
-                        var temperatureDataElement =
-                            document.getElementById("temperature-data");
+                        var temperatureDataElement = document.getElementById("temperature-data");
                         if (!temperatureDataElement) {
-                            temperatureDataElement =
-                                document.createElement("div");
+                            temperatureDataElement = document.createElement("div");
                             temperatureDataElement.id = "temperature-data";
                             document.body.appendChild(temperatureDataElement);
                         }
-                        temperatureDataElement.innerText =
-                            "Temperature: " + data.temperature + "°C";
-
-                        // Update UI with Move data
-                        var MovingDataElement =
-                            document.getElementById("moving-data");
-                        if (!MovingDataElement) {
-                            MovingDataElement = document.createElement("div");
-                            MovingDataElement.id = "moving-data";
-                            document.body.appendChild(MovingDataElement);
-                        }
-                        MovingDataElement.innerText =
-                            "Baby moves? " + data.move;
-
-                        // Update UI with Heart Rate data
-                        var heartRateDataElement =
-                            document.getElementById("heart-rate-data");
-                        if (!heartRateDataElement) {
-                            heartRateDataElement =
-                                document.createElement("div");
-                            heartRateDataElement.id = "heart-rate-data";
-                            document.body.appendChild(heartRateDataElement);
-                        }
-                        heartRateDataElement.innerText =
-                            "Heart Rate: " + data.heartRate + " bpm";
+                        temperatureDataElement.innerText = "Temperature: " + data.data + "°C";
 
                         // Temperature Alert
-                        var temperatureAlertElement =
-                            document.getElementById("temperature-alert");
-                        if (data.temperature > 40) {
+                        var temperatureAlertElement = document.getElementById("temperature-alert");
+                        if (data.data > 40) {
                             if (!temperatureAlertElement) {
-                                temperatureAlertElement =
-                                    document.createElement("div");
-                                temperatureAlertElement.id =
-                                    "temperature-alert";
+                                temperatureAlertElement = document.createElement("div");
+                                temperatureAlertElement.id = "temperature-alert";
                                 temperatureAlertElement.className = "alert";
-                                document.body.insertBefore(
-                                    temperatureAlertElement,
-                                    temperatureDataElement.nextSibling
-                                );
+                                document.body.insertBefore(temperatureAlertElement, temperatureDataElement.nextSibling);
                             }
-                            temperatureAlertElement.innerText =
-                                "Warning: High Temperature (" +
-                                data.temperature +
-                                "°C)";
+                            temperatureAlertElement.innerText = "Warning: High Temperature (" + data.data + "°C)";
                             temperatureAlertElement.style.display = "block"; // Show the alert
                         } else if (temperatureAlertElement) {
                             temperatureAlertElement.style.display = "none"; // Hide the alert if data is not high
                         }
+                    });
+
+                    // Heart Rate Socket
+                    signaling_socket.on("avg_bpm", function (data) {
+                        console.log("Received avg_bpm:", data.data);
+                        heartrate_data = data.data;
+
+                        // Update UI with Heart Rate data
+                        var heartRateDataElement = document.getElementById("heart-rate-data");
+                        if (!heartRateDataElement) {
+                            heartRateDataElement = document.createElement("div");
+                            heartRateDataElement.id = "heart-rate-data";
+                            document.body.appendChild(heartRateDataElement);
+                        }
+                        heartRateDataElement.innerText = "Heart Rate: " + data.data + " bpm";
 
                         // Heart Rate Alert
-                        var heartRateAlertElement =
-                            document.getElementById("heart-rate-alert");
-                        if (data.heartRate > 100) {
+                        var heartRateAlertElement = document.getElementById("heart-rate-alert");
+                        if (data.data > 100) {
                             if (!heartRateAlertElement) {
-                                heartRateAlertElement =
-                                    document.createElement("div");
+                                heartRateAlertElement = document.createElement("div");
                                 heartRateAlertElement.id = "heart-rate-alert";
                                 heartRateAlertElement.className = "alert";
-                                document.body.insertBefore(
-                                    heartRateAlertElement,
-                                    heartRateDataElement.nextSibling
-                                );
+                                document.body.insertBefore(heartRateAlertElement, heartRateDataElement.nextSibling);
                             }
-                            heartRateAlertElement.innerText =
-                                "Warning: High Heart Rate (" +
-                                data.heartRate +
-                                " bpm)";
+                            heartRateAlertElement.innerText = "Warning: High Heart Rate (" + data.data + " bpm)";
                             heartRateAlertElement.style.display = "block"; // Show the alert
                         } else if (heartRateAlertElement) {
                             heartRateAlertElement.style.display = "none"; // Hide the alert if data is not high
                         }
+                        updateBabyStatusDisplay();
+                    });
+
+                    signaling_socket.on("movement", function (data) {
+                        console.log("Received movement:", data.data);
+                        movement_data = data.data.trim();
+                        // Update UI with movement data
+                        var movementElement = document.getElementById("moving-data");
+                        if (!movementElement) {
+                            movementElement = document.createElement("div");
+                            movementElement.id = "moving-data";
+                            document.body.appendChild(movementElement);
+                        }
+                        movementElement.innerText = "Movement: " + data.data;
+
+                        // Movement Alert
+                        var movementAlertElement = document.getElementById("movement-alert");
+                        if (data.data === "movement") {
+                            if (!movementAlertElement) {
+                                movementAlertElement = document.createElement("div");
+                                movementAlertElement.id = "movement-alert";
+                                movementAlertElement.className = "alert";
+                                document.body.insertBefore(movementAlertElement, movementElement.nextSibling);
+                            }
+                            movementAlertElement.innerText = "Warning: Baby is moving";
+                            movementAlertElement.style.display = "block"; // Show the alert
+                        } else if (movementAlertElement) {
+                            movementAlertElement.style.display = "none"; // Hide the alert if data is not high
+                        }
+                        updateBabyStatusDisplay();
                     });
 
                     localStorage.setItem(
@@ -520,6 +535,38 @@
                         if (errorback) errorback();
                     });
             }
+            function determineBabyStatus(
+                voice_detection_data,
+                heartrate_data,
+                movement_data
+            ) {
+                if (
+                    voice_detection_data !== "bg\n" ||
+                    (heartrate_data > heartRateThreshold &&
+                        movement_data === "movement")
+                ) {
+                    return "Awake";
+                } else {
+                    return "Sleeping";
+                }
+            }
+
+            function updateBabyStatusDisplay() {
+                var babyStatusElement = document.getElementById("baby-status");
+                if (!babyStatusElement) {
+                    babyStatusElement = document.createElement("div");
+                    babyStatusElement.id = "baby-status";
+                    document.body.appendChild(babyStatusElement);
+                }
+                var status = determineBabyStatus(voice_detection_data, heartrate_data, movement_data);
+                babyStatusElement.innerText = "Baby Status: " + status;
+            }
+            $(document).ready(function () {
+                $("#ageRangeDropdown").change(function () {
+                    heartRateThreshold = $(this).val();
+                    $("#heart-rate-data").text("Heart Rate Threshold: " + heartRateThreshold + " bpm");
+                });
+            });
         </script>
     </head>
 
@@ -547,81 +594,7 @@
             Heart Rate Threshold: Not set
         </div>
 
-        <script>
-            var heartRateThreshold;
-
-            $(document).ready(function () {
-                // Update display when dropdown changes
-                $("#ageRangeDropdown").change(function () {
-                    heartRateThreshold = $(this).val();
-                    $("#heart-rate-data").text(
-                        "Heart Rate Threshold: " + heartRateThreshold + " bpm"
-                    );
-                    console.log(
-                        "Selected Heart Rate Threshold: " + heartRateThreshold
-                    ); // Log the selected value to the console
-                });
-            });
-        </script>
-
         <!-- Other scripts related to your application's functionality -->
-
         <div id="baby-status" style="color: white">Baby Status: Unknown</div>
-
-        <script>
-            // JavaScript logic to determine baby's sleep/awake status
-            var voice_detection_data = "1"; // Example value, replace with actual data
-            var bluetooth_out = { heartrate: 90 }; // Example value, replace with actual data
-            var movement_out = "1"; // Example value, replace with actual data
-
-            // Function to determine if the baby is sleeping or awake
-            function determineBabyStatus(
-                voice_detection_data,
-                bluetooth_out,
-                movement_out
-            ) {
-                if (
-                    voice_detection_data !== "0" ||
-                    (bluetooth_out.heartrate > heartRateThreshold &&
-                        movement_out === "1")
-                ) {
-                    return "Awake";
-                } else {
-                    return "Sleeping";
-                }
-            }
-
-            // Update baby status display when data changes
-            function updateBabyStatusDisplay() {
-                var babyStatusElement = document.getElementById("baby-status");
-                if (!babyStatusElement) {
-                    babyStatusElement = document.createElement("div");
-                    babyStatusElement.id = "baby-status";
-                    document.body.appendChild(babyStatusElement);
-                }
-                var status = determineBabyStatus(
-                    voice_detection_data,
-                    bluetooth_out,
-                    movement_out
-                );
-                babyStatusElement.innerText = "Baby Status: " + status;
-            }
-
-            // Call update function when data changes
-            // For demonstration purposes, simulate data change every 5 seconds
-            setInterval(function () {
-                // Simulate data change
-                voice_detection_data = Math.random() < 0.5 ? "0" : "1";
-                bluetooth_out.heartrate =
-                    Math.floor(Math.random() * (120 - 70 + 1)) + 70;
-                movement_out = Math.random() < 0.5 ? "0" : "1";
-
-                // Update baby status display
-                updateBabyStatusDisplay();
-            }, 5000);
-
-            // Initial update of baby status display
-            updateBabyStatusDisplay();
-        </script>
     </body>
 </html>
