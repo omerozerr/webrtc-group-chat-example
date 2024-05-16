@@ -13,7 +13,6 @@ import time
 
 print(sd.query_devices())
 
-sd.default.device = 'hw:4,0'
 
 ####### ALL CONSTANTS #####
 fs = 44100
@@ -43,7 +42,7 @@ while True:
     print("Say Now: ")
     while True:
         try:
-            myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16')
+            myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1, dtype='int16', device="hw:3,0")
             sd.wait()
             write(filename, fs, myrecording)
             break  # If the try block is successful, break out of the loop
